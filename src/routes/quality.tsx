@@ -1,22 +1,77 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Sun, Focus, Ruler, Aperture, HardDrive, RefreshCw, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Sun, Focus, Ruler, Aperture, HardDrive, RefreshCw, Send, AlertCircle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
+import { addHistoryItem, formatBytes } from "@/lib/history-store";
 
 export const Route = createFileRoute("/quality")({
   head: () => ({ meta: [{ title: "Image Quality Check · Image Sender" }] }),
   component: QualityPage,
 });
 
-const checks = [
-  { label: "Resolution", icon: Ruler, value: "3024×4032" },
-  { label: "Brightness", icon: Sun, value: "Good" },
-  { label: "Sharpness", icon: Aperture, value: "Good" },
-  { label: "Focus", icon: Focus, value: "Good" },
-  { label: "File Size", icon: HardDrive, value: "2.4 MB" },
-];
-
 function QualityPage() {
   const navigate = useNavigate();
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [meta, setMeta] = useState<{ w: number; h: number; ts: number } | null>(null);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = sessionStorage.getItem("last-capture");
+    const metaRaw = sessionStorage.getItem("last-capture-meta");
+    setDataUrl(url);
+    if (metaRaw) {
+      try {
+        setMeta(JSON.parse(metaRaw));
+      } catch {
+        /* noop */
+      }
+    }
+  }, []);
+
+  const bytes = dataUrl ? Math.round((dataUrl.length * 3) / 4) : 0;
+  const megapixels = meta ? (meta.w * meta.h) / 1_000_000 : 0;
+  const goodResolution = megapixels >= 0.3;
+
+  const checks = [
+    {
+      label: "Resolution",
+      icon: Ruler,
+      value: meta ? `${meta.w}×${meta.h}` : "—",
+      ok: goodResolution,
+    },
+    { label: "Brightness", icon: Sun, value: "Good", ok: true },
+    { label: "Sharpness", icon: Aperture, value: "Good", ok: true },
+    { label: "Focus", icon: Focus, value: "Good", ok: true },
+    { label: "File Size", icon: HardDrive, value: formatBytes(bytes), ok: bytes > 0 },
+  ];
+
+  async function send() {
+    if (!dataUrl || !meta) return;
+    setSending(true);
+    const d = new Date(meta.ts);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const name = `IMG_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`;
+    await new Promise((r) => setTimeout(r, 600));
+    addHistoryItem({
+      id: crypto.randomUUID(),
+      name,
+      dataUrl,
+      sizeBytes: bytes,
+      width: meta.w,
+      height: meta.h,
+      timestamp: meta.ts,
+      status: "Success",
+    });
+    try {
+      sessionStorage.removeItem("last-capture");
+      sessionStorage.removeItem("last-capture-meta");
+    } catch {
+      /* noop */
+    }
+    navigate({ to: "/history" });
+  }
+
   return (
     <MobileShell hideNav>
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-white/80 px-5 py-4 backdrop-blur-xl">
@@ -34,24 +89,13 @@ function QualityPage() {
         {/* Preview */}
         <div className="overflow-hidden rounded-3xl border border-border/60 bg-secondary shadow-[var(--shadow-card)]">
           <div className="relative aspect-[4/3] w-full">
-            <svg viewBox="0 0 400 300" className="h-full w-full">
-              <defs>
-                <linearGradient id="w" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#f2ede4" />
-                  <stop offset="100%" stopColor="#e0d9cc" />
-                </linearGradient>
-                <linearGradient id="f" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#d9cdb8" />
-                  <stop offset="100%" stopColor="#b8a487" />
-                </linearGradient>
-              </defs>
-              <rect width="400" height="190" fill="url(#w)" />
-              <rect y="190" width="400" height="110" fill="url(#f)" />
-              <rect x="20" y="40" width="80" height="120" fill="#cfe6f5" opacity="0.7" stroke="#8aa3b3" strokeWidth="2" />
-              <rect x="170" y="70" width="140" height="80" rx="4" fill="#1a1a1a" />
-              <rect x="60" y="200" width="200" height="60" rx="10" fill="#c9beac" />
-              <rect x="120" y="255" width="140" height="16" rx="4" fill="#8a7358" />
-            </svg>
+            {dataUrl ? (
+              <img src={dataUrl} alt="Captured" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                No image captured yet.
+              </div>
+            )}
           </div>
         </div>
 
@@ -65,22 +109,28 @@ function QualityPage() {
                 </div>
                 <p className="flex-1 text-sm font-medium">{c.label}</p>
                 <span className="text-xs text-muted-foreground">{c.value}</span>
-                <CheckCircle2 className="h-5 w-5 text-[color:var(--success)]" />
+                {c.ok ? (
+                  <CheckCircle2 className="h-5 w-5 text-[color:var(--success)]" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                )}
               </li>
             ))}
           </ul>
         </div>
 
         {/* Info card */}
-        <div className="flex items-start gap-3 rounded-2xl border border-[color:var(--success)]/25 bg-[color:var(--success)]/8 p-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--success)]/15 text-[color:var(--success)]">
-            <CheckCircle2 className="h-5 w-5" />
+        {dataUrl && (
+          <div className="flex items-start gap-3 rounded-2xl border border-[color:var(--success)]/25 bg-[color:var(--success)]/8 p-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--success)]/15 text-[color:var(--success)]">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Image quality looks good</p>
+              <p className="text-xs text-muted-foreground">This image is ready to send.</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">Image quality looks good</p>
-            <p className="text-xs text-muted-foreground">This image is ready to send.</p>
-          </div>
-        </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3 pt-1">
@@ -92,12 +142,20 @@ function QualityPage() {
             Retake
           </button>
           <button
-            onClick={() => navigate({ to: "/history" })}
-            className="flex h-14 flex-[1.4] items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-[0.98]"
+            onClick={send}
+            disabled={!dataUrl || sending}
+            className="flex h-14 flex-[1.4] items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-[0.98] disabled:opacity-60"
             style={{ background: "var(--gradient-primary)" }}
           >
-            Send Image
-            <Send className="h-4 w-4" />
+            {sending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Sending…
+              </>
+            ) : (
+              <>
+                Send Image <Send className="h-4 w-4" />
+              </>
+            )}
           </button>
         </div>
       </main>

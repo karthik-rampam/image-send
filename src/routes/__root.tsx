@@ -78,11 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Image Sender — Capture & Send Images Securely" },
-      { name: "description", content: "Capture images from your phone and securely send them to another application for processing." },
+      {
+        name: "description",
+        content:
+          "Capture images from your phone and securely send them to another application for processing.",
+      },
       { name: "author", content: "Image Sender" },
       { name: "theme-color", content: "#5B5CEB" },
       { property: "og:title", content: "Image Sender" },
-      { property: "og:description", content: "Capture images from your phone and securely send them to another application." },
+      {
+        property: "og:description",
+        content: "Capture images from your phone and securely send them to another application.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },

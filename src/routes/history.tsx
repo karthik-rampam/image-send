@@ -1,22 +1,43 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Search, SlidersHorizontal, MoreVertical, ImageIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  SlidersHorizontal,
+  MoreVertical,
+  ImageIcon,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
+import {
+  loadHistory,
+  saveHistory,
+  formatDateTime,
+  formatBytes,
+  type HistoryItem,
+} from "@/lib/history-store";
 
 export const Route = createFileRoute("/history")({
   head: () => ({ meta: [{ title: "Image History · Image Sender" }] }),
   component: HistoryPage,
 });
 
-const items = [
-  { name: "IMG_20250517_102030.jpg", date: "17 May 2025", time: "10:20 AM", size: "2.45 MB", status: "Success" as const },
-  { name: "IMG_20250517_101015.jpg", date: "17 May 2025", time: "10:10 AM", size: "2.10 MB", status: "Success" as const },
-  { name: "IMG_20250517_095500.jpg", date: "17 May 2025", time: "09:55 AM", size: "1.98 MB", status: "Failed" as const },
-  { name: "IMG_20250517_094512.jpg", date: "17 May 2025", time: "09:45 AM", size: "2.22 MB", status: "Success" as const },
-  { name: "IMG_20250517_093000.jpg", date: "17 May 2025", time: "09:30 AM", size: "2.15 MB", status: "Pending" as const },
-  { name: "IMG_20250517_092030.jpg", date: "17 May 2025", time: "09:20 AM", size: "1.75 MB", status: "Success" as const },
-];
-
 function HistoryPage() {
+  const [items, setItems] = useState<HistoryItem[]>([]);
+  const [query, setQuery] = useState("");
+  useEffect(() => {
+    setItems(loadHistory());
+  }, []);
+  const filtered = useMemo(
+    () => items.filter((i) => i.name.toLowerCase().includes(query.toLowerCase())),
+    [items, query],
+  );
+  function removeItem(id: string) {
+    const next = items.filter((i) => i.id !== id);
+    setItems(next);
+    saveHistory(next);
+  }
+
   return (
     <MobileShell>
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-white/80 px-5 py-4 backdrop-blur-xl">
@@ -34,6 +55,8 @@ function HistoryPage() {
             <Search className="h-4 w-4 text-muted-foreground" />
             <input
               type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search images..."
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
@@ -43,27 +66,49 @@ function HistoryPage() {
           </button>
         </div>
 
-        <ul className="space-y-2.5">
-          {items.map((i) => (
-            <li key={i.name} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-[var(--shadow-card)]">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
-                <ImageIcon className="h-6 w-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-semibold">{i.name}</p>
-                  <StatusBadge status={i.status} />
-                </div>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {i.date}, {i.time} · {i.size}
-                </p>
-              </div>
-              <button className="rounded-full p-2 text-muted-foreground hover:bg-secondary">
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
-        </ul>
+        {filtered.length === 0 ? (
+          <div className="mt-16 flex flex-col items-center gap-3 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
+              <ImageIcon className="h-7 w-7" />
+            </div>
+            <p className="text-sm font-semibold">No images yet</p>
+            <p className="max-w-[240px] text-xs text-muted-foreground">
+              Captured images you send will appear here.
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-2.5">
+            {filtered.map((i) => {
+              const dt = formatDateTime(i.timestamp);
+              return (
+                <li
+                  key={i.id}
+                  className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-[var(--shadow-card)]"
+                >
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-secondary">
+                    <img src={i.dataUrl} alt={i.name} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-semibold">{i.name}</p>
+                      <StatusBadge status={i.status} />
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {dt.date}, {dt.time} · {formatBytes(i.sizeBytes)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeItem(i.id)}
+                    className="rounded-full p-2 text-muted-foreground hover:bg-secondary"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </main>
     </MobileShell>
   );

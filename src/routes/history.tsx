@@ -5,7 +5,6 @@ import {
   SlidersHorizontal,
   ImageIcon,
   Trash2,
-  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";

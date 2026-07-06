@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bell, Menu, CheckCircle2, XCircle, Upload, TrendingUp, ImageIcon, ChevronRight } from "lucide-react";
+import { Bell, Menu, CheckCircle2, XCircle, Upload, TrendingUp, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { loadHistory, formatDateTime, type HistoryItem } from "@/lib/history-store";

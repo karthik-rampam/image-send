@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { addHistoryItem, formatBytes } from "@/lib/history-store";
 import { supabase } from "@/integrations/supabase/client";
+import { loadSettings } from "@/lib/settings-store";
 
 export const Route = createFileRoute("/quality")({
   head: () => ({ meta: [{ title: "Image Quality Check · Image Sender" }] }),
@@ -66,6 +67,42 @@ function QualityPage() {
     const pad = (n: number) => String(n).padStart(2, "0");
     const name = `IMG_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`;
     let status: "Success" | "Failed" = "Success";
+    const settings = loadSettings();
+    const payload = {
+      name,
+      image_data: dataUrl,
+      width: meta.w,
+      height: meta.h,
+      size_bytes: bytes,
+      timestamp: meta.ts,
+    };
+
+    // 1. POST to user's Target Server URL (from Settings)
+    let postOk = false;
+    if (settings.serverUrl) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        Math.max(1, settings.timeoutSec) * 1000,
+      );
+      try {
+        const res = await fetch(settings.serverUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+        postOk = res.ok;
+        if (!res.ok) console.error("POST failed:", res.status, res.statusText);
+      } catch (err) {
+        console.error("POST to target URL failed:", err);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    // 2. Also insert into Lovable Cloud so the realtime receiver page still works
+    let cloudOk = false;
     try {
       const { error } = await supabase.from("captures").insert({
         name,
@@ -75,10 +112,12 @@ function QualityPage() {
         size_bytes: bytes,
       });
       if (error) throw error;
+      cloudOk = true;
     } catch (err) {
-      console.error("Send failed:", err);
-      status = "Failed";
+      console.error("Cloud insert failed:", err);
     }
+
+    if (!postOk && !cloudOk) status = "Failed";
     addHistoryItem({
       id: crypto.randomUUID(),
       name,

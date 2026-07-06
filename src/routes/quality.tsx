@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { addHistoryItem, formatBytes } from "@/lib/history-store";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/quality")({
   head: () => ({ meta: [{ title: "Image Quality Check · Image Sender" }] }),
@@ -64,7 +65,20 @@ function QualityPage() {
     const d = new Date(meta.ts);
     const pad = (n: number) => String(n).padStart(2, "0");
     const name = `IMG_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`;
-    await new Promise((r) => setTimeout(r, 600));
+    let status: "Success" | "Failed" = "Success";
+    try {
+      const { error } = await supabase.from("captures").insert({
+        name,
+        image_data: dataUrl,
+        width: meta.w,
+        height: meta.h,
+        size_bytes: bytes,
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error("Send failed:", err);
+      status = "Failed";
+    }
     addHistoryItem({
       id: crypto.randomUUID(),
       name,
@@ -73,7 +87,7 @@ function QualityPage() {
       width: meta.w,
       height: meta.h,
       timestamp: meta.ts,
-      status: "Success",
+      status,
     });
     try {
       sessionStorage.removeItem("last-capture");

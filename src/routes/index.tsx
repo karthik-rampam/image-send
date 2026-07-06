@@ -8,10 +8,23 @@ import {
   ChevronRight,
   ArrowRight,
   ImageIcon,
+  Home as HomeIcon,
+  LayoutDashboard,
+  History as HistoryIcon,
+  Settings as SettingsIcon,
+  BellOff,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { loadHistory, formatDateTime, type HistoryItem } from "@/lib/history-store";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -19,6 +32,8 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const [last, setLast] = useState<HistoryItem | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   useEffect(() => {
     const items = loadHistory();
     setLast(items[0] ?? null);
@@ -28,12 +43,48 @@ function HomePage() {
     <MobileShell>
       {/* Glass header */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-white/75 px-5 py-4 backdrop-blur-xl">
-        <button
-          aria-label="Menu"
-          className="rounded-full p-2 text-foreground/70 hover:bg-secondary"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetTrigger asChild>
+            <button
+              aria-label="Menu"
+              className="rounded-full p-2 text-foreground/70 hover:bg-secondary"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[82vw] max-w-sm p-0">
+            <SheetHeader className="border-b border-border/60 px-5 py-5 text-left">
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
+                  style={{ background: "var(--gradient-primary)" }}
+                >
+                  <Send className="h-4 w-4" />
+                </div>
+                <SheetTitle className="text-base">Image Sender</SheetTitle>
+              </div>
+            </SheetHeader>
+            <nav className="p-3">
+              {[
+                { to: "/" as const, label: "Home", icon: HomeIcon },
+                { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
+                { to: "/scan" as const, label: "New Scan", icon: Camera },
+                { to: "/history" as const, label: "Image History", icon: HistoryIcon },
+                { to: "/settings" as const, label: "Settings", icon: SettingsIcon },
+              ].map((n) => (
+                <SheetClose asChild key={n.to}>
+                  <Link
+                    to={n.to}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-foreground/80 hover:bg-secondary"
+                  >
+                    <n.icon className="h-5 w-5 text-primary" />
+                    {n.label}
+                  </Link>
+                </SheetClose>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
         <div className="flex items-center gap-2">
           <div
             className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
@@ -43,13 +94,30 @@ function HomePage() {
           </div>
           <span className="text-[15px] font-semibold tracking-tight">Image Sender</span>
         </div>
-        <button
-          aria-label="Notifications"
-          className="relative rounded-full p-2 text-foreground/70 hover:bg-secondary"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
-        </button>
+        <Sheet open={notifOpen} onOpenChange={setNotifOpen}>
+          <SheetTrigger asChild>
+            <button
+              aria-label="Notifications"
+              className="relative rounded-full p-2 text-foreground/70 hover:bg-secondary"
+            >
+              <Bell className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[88vw] max-w-sm p-0">
+            <SheetHeader className="border-b border-border/60 px-5 py-5 text-left">
+              <SheetTitle className="text-base">Notifications</SheetTitle>
+            </SheetHeader>
+            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
+                <BellOff className="h-6 w-6" />
+              </div>
+              <p className="text-sm font-semibold">You're all caught up</p>
+              <p className="max-w-[240px] text-xs text-muted-foreground">
+                Notifications about your uploads will appear here.
+              </p>
+            </div>
+          </SheetContent>
+        </Sheet>
       </header>
 
       <main className="flex-1 space-y-6 px-5 pb-8 pt-4">

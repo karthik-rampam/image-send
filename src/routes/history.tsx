@@ -3,12 +3,12 @@ import {
   ArrowLeft,
   Search,
   SlidersHorizontal,
-  MoreVertical,
   ImageIcon,
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   loadHistory,
   saveHistory,
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/history")({
 function HistoryPage() {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [query, setQuery] = useState("");
+  const [viewer, setViewer] = useState<HistoryItem | null>(null);
   useEffect(() => {
     setItems(loadHistory());
   }, []);
@@ -85,10 +86,19 @@ function HistoryPage() {
                   key={i.id}
                   className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-[var(--shadow-card)]"
                 >
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-secondary">
+                  <button
+                    type="button"
+                    onClick={() => setViewer(i)}
+                    className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-secondary transition-transform active:scale-95"
+                    aria-label={`Open ${i.name}`}
+                  >
                     <img src={i.dataUrl} alt={i.name} className="h-full w-full object-cover" />
-                  </div>
-                  <div className="min-w-0 flex-1">
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewer(i)}
+                    className="min-w-0 flex-1 text-left"
+                  >
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-semibold">{i.name}</p>
                       <StatusBadge status={i.status} />
@@ -96,7 +106,7 @@ function HistoryPage() {
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
                       {dt.date}, {dt.time} · {formatBytes(i.sizeBytes)}
                     </p>
-                  </div>
+                  </button>
                   <button
                     onClick={() => removeItem(i.id)}
                     className="rounded-full p-2 text-muted-foreground hover:bg-secondary"
@@ -110,6 +120,33 @@ function HistoryPage() {
           </ul>
         )}
       </main>
+
+      <Dialog open={viewer !== null} onOpenChange={(o) => !o && setViewer(null)}>
+        <DialogContent className="max-w-[95vw] gap-3 rounded-2xl p-3 sm:max-w-lg">
+          {viewer && (
+            <>
+              <div className="overflow-hidden rounded-xl bg-black">
+                <img
+                  src={viewer.dataUrl}
+                  alt={viewer.name}
+                  className="max-h-[70vh] w-full object-contain"
+                />
+              </div>
+              <div className="flex items-start justify-between gap-3 px-1">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{viewer.name}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {formatDateTime(viewer.timestamp).date},{" "}
+                    {formatDateTime(viewer.timestamp).time} · {viewer.width}×{viewer.height} ·{" "}
+                    {formatBytes(viewer.sizeBytes)}
+                  </p>
+                </div>
+                <StatusBadge status={viewer.status} />
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </MobileShell>
   );
 }

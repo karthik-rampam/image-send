@@ -10,9 +10,30 @@ import {
   Info,
   Shield,
   Sun,
+  Pencil,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { loadSettings, saveSettings, type AppSettings } from "@/lib/settings-store";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings · Image Sender" }] }),
@@ -20,8 +41,46 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
-  const [autoSend, setAutoSend] = useState(true);
-  const [lightMode, setLightMode] = useState(true);
+  const [s, setS] = useState<AppSettings | null>(null);
+  const [editField, setEditField] = useState<null | "serverUrl" | "timeoutSec">(null);
+  const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    setS(loadSettings());
+  }, []);
+
+  function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
+    if (!s) return;
+    const next = { ...s, [key]: value };
+    setS(next);
+    saveSettings(next);
+  }
+
+  function openEdit(field: "serverUrl" | "timeoutSec") {
+    if (!s) return;
+    setEditField(field);
+    setDraft(String(s[field]));
+  }
+
+  function saveEdit() {
+    if (!s || !editField) return;
+    if (editField === "timeoutSec") {
+      const n = Math.max(1, Math.min(300, Number(draft) || 30));
+      update("timeoutSec", n);
+    } else {
+      update("serverUrl", draft.trim());
+    }
+    setEditField(null);
+  }
+
+  if (!s) {
+    return (
+      <MobileShell>
+        <div className="flex-1" />
+      </MobileShell>
+    );
+  }
+
   return (
     <MobileShell>
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-white/80 px-5 py-4 backdrop-blur-xl">
@@ -34,40 +93,91 @@ function SettingsPage() {
 
       <main className="flex-1 space-y-6 px-5 pb-8 pt-4">
         <Section title="Camera Settings">
-          <Row icon={Camera} label="Default Camera" value="Back Camera" chevron />
-          <Row icon={ImageIcon} label="Image Quality" value="High" chevron />
-          <Row
+          <SelectRow
+            icon={Camera}
+            label="Default Camera"
+            value={s.defaultCamera}
+            options={["Back Camera", "Front Camera"]}
+            onChange={(v) => update("defaultCamera", v as AppSettings["defaultCamera"])}
+          />
+          <SelectRow
+            icon={ImageIcon}
+            label="Image Quality"
+            value={s.imageQuality}
+            options={["Low", "Medium", "High"]}
+            onChange={(v) => update("imageQuality", v as AppSettings["imageQuality"])}
+          />
+          <ToggleRow
             icon={Zap}
             label="Auto Send"
             sub="Automatically send image after quality check"
-            trailing={<Toggle checked={autoSend} onChange={() => setAutoSend((v) => !v)} />}
+            checked={s.autoSend}
+            onChange={(v) => update("autoSend", v)}
           />
         </Section>
 
         <Section title="Server Settings">
-          <Row
+          <EditableRow
             icon={Server}
             label="Target Server URL"
-            value="https://example.com/api/upload"
-            chevron
+            value={s.serverUrl}
             mono
+            onEdit={() => openEdit("serverUrl")}
           />
-          <Row icon={Timer} label="Timeout" value="30 s" chevron />
+          <EditableRow
+            icon={Timer}
+            label="Timeout"
+            value={`${s.timeoutSec} s`}
+            onEdit={() => openEdit("timeoutSec")}
+          />
         </Section>
 
         <Section title="Appearance">
-          <Row
+          <ToggleRow
             icon={Sun}
             label="Light Mode"
-            trailing={<Toggle checked={lightMode} onChange={() => setLightMode((v) => !v)} />}
+            checked={s.lightMode}
+            onChange={(v) => update("lightMode", v)}
           />
         </Section>
 
         <Section title="About">
-          <Row icon={Info} label="Version" value="1.0.0" />
-          <Row icon={Shield} label="Privacy Policy" chevron />
+          <StaticRow icon={Info} label="Version" value="1.0.0" />
+          <StaticRow icon={Shield} label="Privacy Policy" chevron />
         </Section>
       </main>
+
+      <Dialog open={editField !== null} onOpenChange={(o) => !o && setEditField(null)}>
+        <DialogContent className="max-w-[92vw] rounded-2xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editField === "serverUrl" ? "Target Server URL" : "Timeout (seconds)"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="edit-field" className="text-xs text-muted-foreground">
+              {editField === "serverUrl"
+                ? "Full URL where images will be sent"
+                : "Request timeout between 1 and 300"}
+            </Label>
+            <Input
+              id="edit-field"
+              autoFocus
+              type={editField === "timeoutSec" ? "number" : "url"}
+              inputMode={editField === "timeoutSec" ? "numeric" : "url"}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={editField === "serverUrl" ? "https://..." : "30"}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={saveEdit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileShell>
   );
 }
@@ -85,61 +195,137 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Row({
+type IconType = typeof Camera;
+
+function RowShell({
   icon: Icon,
   label,
-  value,
   sub,
-  chevron,
-  trailing,
-  mono,
+  children,
 }: {
-  icon: typeof Camera;
+  icon: IconType;
   label: string;
-  value?: string;
   sub?: string;
-  chevron?: boolean;
-  trailing?: React.ReactNode;
-  mono?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <li className="flex items-center gap-3 px-4 py-3.5">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-foreground">{label}</p>
-        {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
-        {value && !trailing && (
-          <p className={`truncate text-[11px] text-muted-foreground ${mono ? "font-mono" : ""}`}>
-            {value}
-          </p>
-        )}
+        {sub && <p className="text-[11px] leading-snug text-muted-foreground">{sub}</p>}
       </div>
-      {trailing ?? (
-        <>
-          {value && !sub && !mono && <span className="text-xs text-muted-foreground">{value}</span>}
-          {chevron && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-        </>
-      )}
+      <div className="ml-2 flex shrink-0 items-center">{children}</div>
     </li>
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function ToggleRow({
+  icon,
+  label,
+  sub,
+  checked,
+  onChange,
+}: {
+  icon: IconType;
+  label: string;
+  sub?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
-    <button
-      onClick={onChange}
-      role="switch"
-      aria-checked={checked}
-      className={`relative h-7 w-12 rounded-full transition-colors ${checked ? "" : "bg-border"}`}
-      style={checked ? { background: "var(--gradient-primary)" } : undefined}
-    >
-      <span
-        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-transform ${
-          checked ? "translate-x-[22px]" : "translate-x-0.5"
-        }`}
-      />
-    </button>
+    <RowShell icon={icon} label={label} sub={sub}>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </RowShell>
+  );
+}
+
+function EditableRow({
+  icon,
+  label,
+  value,
+  mono,
+  onEdit,
+}: {
+  icon: IconType;
+  label: string;
+  value: string;
+  mono?: boolean;
+  onEdit: () => void;
+}) {
+  const Icon = icon;
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-secondary/40"
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p
+            className={`truncate text-[11px] text-muted-foreground ${mono ? "font-mono" : ""}`}
+          >
+            {value}
+          </p>
+        </div>
+        <Pencil className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
+    </li>
+  );
+}
+
+function StaticRow({
+  icon: Icon,
+  label,
+  value,
+  chevron,
+}: {
+  icon: IconType;
+  label: string;
+  value?: string;
+  chevron?: boolean;
+}) {
+  return (
+    <RowShell icon={Icon} label={label}>
+      {value && <span className="text-xs text-muted-foreground">{value}</span>}
+      {chevron && <ChevronRight className="ml-1 h-4 w-4 text-muted-foreground" />}
+    </RowShell>
+  );
+}
+
+function SelectRow({
+  icon: Icon,
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  icon: IconType;
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <RowShell icon={Icon} label={label}>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-8 min-w-[7.5rem] gap-1 rounded-lg border-border/70 bg-secondary/50 px-2.5 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o} value={o} className="text-sm">
+              {o}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </RowShell>
   );
 }

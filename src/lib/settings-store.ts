@@ -10,7 +10,10 @@ export type AppSettings = {
 const KEY = "image-sender-settings";
 
 export const defaultSettings: AppSettings = {
-  serverUrl: "https://example.com/api/upload",
+  serverUrl:
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/public/upload`
+      : "/api/public/upload",
   timeoutSec: 30,
   defaultCamera: "Back Camera",
   imageQuality: "High",

@@ -1,12 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bell, Menu, Camera, ShieldCheck, Send, ChevronRight, CheckCircle2, ArrowRight } from "lucide-react";
+import { Bell, Menu, Camera, ShieldCheck, Send, ChevronRight, ArrowRight, ImageIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
+import { loadHistory, formatDateTime, type HistoryItem } from "@/lib/history-store";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
 function HomePage() {
+  const [last, setLast] = useState<HistoryItem | null>(null);
+  useEffect(() => {
+    const items = loadHistory();
+    setLast(items[0] ?? null);
+  }, []);
+
   return (
     <MobileShell>
       {/* Glass header */}
@@ -79,22 +87,27 @@ function HomePage() {
           </ol>
         </section>
 
-        {/* Recent status */}
         <Link
           to="/history"
           className="flex items-center justify-between rounded-3xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)] transition-colors hover:bg-secondary/40"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[color:var(--success)]/12 text-[color:var(--success)]">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
+              <ImageIcon className="h-5 w-5" />
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground">Last image sent</p>
-              <p className="text-sm font-semibold">Today · 10:25 AM</p>
+              {last ? (
+                <p className="text-sm font-semibold">
+                  {formatDateTime(last.timestamp).date} · {formatDateTime(last.timestamp).time}
+                </p>
+              ) : (
+                <p className="text-sm font-semibold">No images yet</p>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-1 text-xs font-semibold text-[color:var(--success)]">
-            Success
+          <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+            {last ? last.status : "—"}
             <ChevronRight className="h-4 w-4" />
           </div>
         </Link>

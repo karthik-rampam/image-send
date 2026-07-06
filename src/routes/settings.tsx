@@ -255,6 +255,7 @@ function EditableRow({
   mono?: boolean;
   onEdit: () => void;
 }) {
+  const Icon = icon;
   return (
     <li>
       <button
@@ -263,16 +264,21 @@ function EditableRow({
         className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-secondary/40"
       >
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          {/* @ts-expect-error dynamic icon */}
-          <icon.type />
+          <Icon className="h-4 w-4" />
         </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p
+            className={`truncate text-[11px] text-muted-foreground ${mono ? "font-mono" : ""}`}
+          >
+            {value}
+          </p>
+        </div>
+        <Pencil className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
       </button>
     </li>
   );
 }
-
-// Simpler EditableRow without dynamic icon hack:
-function _unused() {}
 
 function StaticRow({
   icon: Icon,

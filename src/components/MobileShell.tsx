@@ -21,7 +21,7 @@ export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <nav className="sticky bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-white/85 backdrop-blur-xl">
-      <ul className="mx-auto grid max-w-md grid-cols-5 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <ul className="grid w-full grid-cols-5 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {navItems.map(({ to, label, icon: Icon, primary }) => {
           const active = pathname === to;
           if (primary) {
@@ -66,11 +66,9 @@ export function MobileShell({
   hideNav?: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-[oklch(0.97_0.008_270)] px-0 py-0 md:py-8">
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-background md:min-h-[900px] md:rounded-[2.5rem] md:shadow-[0_30px_80px_-20px_rgba(91,92,235,0.25)] md:ring-1 md:ring-black/5 md:overflow-hidden">
-        <div className="flex flex-1 flex-col">{children}</div>
-        {!hideNav && <BottomNav />}
-      </div>
+    <div className="flex min-h-[100dvh] w-full flex-col bg-background">
+      <div className="flex flex-1 flex-col">{children}</div>
+      {!hideNav && <BottomNav />}
     </div>
   );
 }

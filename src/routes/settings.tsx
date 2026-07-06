@@ -1,5 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, Camera, Image as ImageIcon, Zap, Server, Timer, Info, Shield, Sun } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Camera,
+  Image as ImageIcon,
+  Zap,
+  Server,
+  Timer,
+  Info,
+  Shield,
+  Sun,
+} from "lucide-react";
 import { useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 
@@ -34,7 +45,13 @@ function SettingsPage() {
         </Section>
 
         <Section title="Server Settings">
-          <Row icon={Server} label="Target Server URL" value="https://example.com/api/upload" chevron mono />
+          <Row
+            icon={Server}
+            label="Target Server URL"
+            value="https://example.com/api/upload"
+            chevron
+            mono
+          />
           <Row icon={Timer} label="Timeout" value="30 s" chevron />
         </Section>
 
@@ -94,7 +111,9 @@ function Row({
         <p className="text-sm font-medium text-foreground">{label}</p>
         {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
         {value && !trailing && (
-          <p className={`truncate text-[11px] text-muted-foreground ${mono ? "font-mono" : ""}`}>{value}</p>
+          <p className={`truncate text-[11px] text-muted-foreground ${mono ? "font-mono" : ""}`}>
+            {value}
+          </p>
         )}
       </div>
       {trailing ?? (
@@ -113,9 +132,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={onChange}
       role="switch"
       aria-checked={checked}
-      className={`relative h-7 w-12 rounded-full transition-colors ${
-        checked ? "" : "bg-border"
-      }`}
+      className={`relative h-7 w-12 rounded-full transition-colors ${checked ? "" : "bg-border"}`}
       style={checked ? { background: "var(--gradient-primary)" } : undefined}
     >
       <span

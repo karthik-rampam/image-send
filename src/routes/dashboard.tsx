@@ -48,11 +48,17 @@ function DashboardPage() {
   return (
     <MobileShell>
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-white/75 px-5 py-4 backdrop-blur-xl">
-        <button aria-label="Menu" className="rounded-full p-2 text-foreground/70 hover:bg-secondary">
+        <button
+          aria-label="Menu"
+          className="rounded-full p-2 text-foreground/70 hover:bg-secondary"
+        >
           <Menu className="h-5 w-5" />
         </button>
         <h1 className="text-[15px] font-semibold tracking-tight">Dashboard</h1>
-        <button aria-label="Notifications" className="rounded-full p-2 text-foreground/70 hover:bg-secondary">
+        <button
+          aria-label="Notifications"
+          className="rounded-full p-2 text-foreground/70 hover:bg-secondary"
+        >
           <Bell className="h-5 w-5" />
         </button>
       </header>
@@ -64,7 +70,9 @@ function DashboardPage() {
           style={{ background: "var(--gradient-primary)" }}
         >
           <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-          <p className="text-xs font-medium uppercase tracking-wider text-white/80">Total Images Sent</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-white/80">
+            Total Images Sent
+          </p>
           <div className="mt-2 flex items-end justify-between">
             <p className="text-4xl font-bold tracking-tight">{total}</p>
             <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
@@ -77,8 +85,13 @@ function DashboardPage() {
         {/* Stat grid */}
         <div className="grid grid-cols-2 gap-3">
           {stats.map((s) => (
-            <div key={s.label} className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-              <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${toneClass(s.tone)}`}>
+            <div
+              key={s.label}
+              className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]"
+            >
+              <div
+                className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${toneClass(s.tone)}`}
+              >
                 <s.icon className="h-4 w-4" />
               </div>
               <p className="text-[11px] font-medium text-muted-foreground">{s.label}</p>
@@ -91,7 +104,10 @@ function DashboardPage() {
         <section className="rounded-3xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="mb-3 flex items-center justify-between px-1">
             <h2 className="text-[15px] font-semibold">Recent Activity</h2>
-            <Link to="/history" className="flex items-center gap-1 text-xs font-semibold text-primary">
+            <Link
+              to="/history"
+              className="flex items-center gap-1 text-xs font-semibold text-primary"
+            >
               View all <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
@@ -133,6 +149,8 @@ function StatusBadge({ status }: { status: "Success" | "Failed" | "Pending" }) {
     Pending: "bg-amber-500/12 text-amber-600",
   } as const;
   return (
-    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${map[status]}`}>{status}</span>
+    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${map[status]}`}>
+      {status}
+    </span>
   );
 }

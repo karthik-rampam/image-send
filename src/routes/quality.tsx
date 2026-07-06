@@ -1,5 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Sun, Focus, Ruler, Aperture, HardDrive, RefreshCw, Send, AlertCircle, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Sun,
+  Focus,
+  Ruler,
+  Aperture,
+  HardDrive,
+  RefreshCw,
+  Send,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { addHistoryItem, formatBytes } from "@/lib/history-store";

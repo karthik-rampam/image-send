@@ -1,5 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Zap, RefreshCw, Image as ImageIcon, Camera, Lightbulb, ZapOff } from "lucide-react";
+import {
+  ArrowLeft,
+  Zap,
+  RefreshCw,
+  Image as ImageIcon,
+  Camera,
+  Lightbulb,
+  ZapOff,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 
@@ -131,7 +139,11 @@ function ScanPage() {
             <p className="text-[15px] font-semibold">New Scan</p>
             <p className="text-[11px] text-white/60">Capture a new image</p>
           </div>
-          <button onClick={toggleTorch} aria-label="Flash" className="rounded-full bg-white/10 p-2.5 backdrop-blur-md">
+          <button
+            onClick={toggleTorch}
+            aria-label="Flash"
+            className="rounded-full bg-white/10 p-2.5 backdrop-blur-md"
+          >
             {torch ? <Zap className="h-5 w-5 text-amber-300" /> : <ZapOff className="h-5 w-5" />}
           </button>
         </header>
@@ -154,13 +166,17 @@ function ScanPage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
               <p className="text-sm font-semibold text-white">Camera unavailable</p>
               <p className="text-xs text-white/70">{error}</p>
-              <p className="text-[11px] text-white/50">Allow camera access, or use Gallery below.</p>
+              <p className="text-[11px] text-white/50">
+                Allow camera access, or use Gallery below.
+              </p>
             </div>
           )}
 
           {/* Camera badge */}
           <div className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-[11px] font-semibold backdrop-blur">
-            <span className={`h-2 w-2 animate-pulse rounded-full ${ready ? "bg-[color:var(--success)]" : "bg-amber-400"}`} />
+            <span
+              className={`h-2 w-2 animate-pulse rounded-full ${ready ? "bg-[color:var(--success)]" : "bg-amber-400"}`}
+            />
             Camera
           </div>
 

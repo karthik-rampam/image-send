@@ -1,8 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Search, SlidersHorizontal, MoreVertical, ImageIcon, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  SlidersHorizontal,
+  MoreVertical,
+  ImageIcon,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
-import { loadHistory, saveHistory, formatDateTime, formatBytes, type HistoryItem } from "@/lib/history-store";
+import {
+  loadHistory,
+  saveHistory,
+  formatDateTime,
+  formatBytes,
+  type HistoryItem,
+} from "@/lib/history-store";
 
 export const Route = createFileRoute("/history")({
   head: () => ({ meta: [{ title: "Image History · Image Sender" }] }),

@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bell, Menu, Camera, ShieldCheck, Send, ChevronRight, ArrowRight, ImageIcon } from "lucide-react";
+import {
+  Bell,
+  Menu,
+  Camera,
+  ShieldCheck,
+  Send,
+  ChevronRight,
+  ArrowRight,
+  ImageIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { loadHistory, formatDateTime, type HistoryItem } from "@/lib/history-store";
@@ -19,16 +28,25 @@ function HomePage() {
     <MobileShell>
       {/* Glass header */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-white/75 px-5 py-4 backdrop-blur-xl">
-        <button aria-label="Menu" className="rounded-full p-2 text-foreground/70 hover:bg-secondary">
+        <button
+          aria-label="Menu"
+          className="rounded-full p-2 text-foreground/70 hover:bg-secondary"
+        >
           <Menu className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg text-white" style={{ background: "var(--gradient-primary)" }}>
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
+            style={{ background: "var(--gradient-primary)" }}
+          >
             <Send className="h-4 w-4" />
           </div>
           <span className="text-[15px] font-semibold tracking-tight">Image Sender</span>
         </div>
-        <button aria-label="Notifications" className="relative rounded-full p-2 text-foreground/70 hover:bg-secondary">
+        <button
+          aria-label="Notifications"
+          className="relative rounded-full p-2 text-foreground/70 hover:bg-secondary"
+        >
           <Bell className="h-5 w-5" />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
         </button>
@@ -43,9 +61,12 @@ function HomePage() {
         </div>
 
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Capture & Send Images Securely</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Capture & Send Images Securely
+          </h1>
           <p className="mx-auto max-w-[300px] text-sm leading-relaxed text-muted-foreground">
-            Capture an image from your phone and securely send it to another application for processing.
+            Capture an image from your phone and securely send it to another application for
+            processing.
           </p>
         </div>
 
@@ -67,7 +88,11 @@ function HomePage() {
           <ol className="space-y-3">
             {[
               { icon: Camera, title: "Capture Image", desc: "Take a photo using your camera" },
-              { icon: ShieldCheck, title: "Quality Check", desc: "We verify the image before sending" },
+              {
+                icon: ShieldCheck,
+                title: "Quality Check",
+                desc: "We verify the image before sending",
+              },
               { icon: Send, title: "Send Image", desc: "Securely transmit to your application" },
             ].map((s, i) => (
               <li key={s.title} className="flex items-center gap-3">
@@ -118,7 +143,10 @@ function HomePage() {
 
 function PhoneIllustration() {
   return (
-    <svg viewBox="0 0 220 200" className="h-44 w-auto drop-shadow-[0_10px_20px_rgba(91,92,235,0.25)]">
+    <svg
+      viewBox="0 0 220 200"
+      className="h-44 w-auto drop-shadow-[0_10px_20px_rgba(91,92,235,0.25)]"
+    >
       <defs>
         <linearGradient id="phone" x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor="#5B5CEB" />
@@ -137,7 +165,14 @@ function PhoneIllustration() {
       <path d="M172 62 L206 46 L192 90 L182 78 L172 82 Z" fill="#7C4DFF" />
       <path d="M182 78 L192 90 L188 74 Z" fill="#5B5CEB" />
       {/* dashed trajectory */}
-      <path d="M160 100 Q 180 80 200 96" stroke="#7C4DFF" strokeWidth="2" strokeDasharray="3 4" fill="none" opacity="0.6" />
+      <path
+        d="M160 100 Q 180 80 200 96"
+        stroke="#7C4DFF"
+        strokeWidth="2"
+        strokeDasharray="3 4"
+        fill="none"
+        opacity="0.6"
+      />
       {/* clouds */}
       <ellipse cx="40" cy="60" rx="20" ry="7" fill="white" opacity="0.9" />
       <ellipse cx="30" cy="150" rx="18" ry="6" fill="white" opacity="0.9" />

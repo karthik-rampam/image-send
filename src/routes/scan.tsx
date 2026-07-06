@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Zap, RefreshCw, Image as ImageIcon, Upload, Camera, Lightbulb } from "lucide-react";
+import { ArrowLeft, Zap, RefreshCw, Image as ImageIcon, Camera, Lightbulb, ZapOff } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 
 export const Route = createFileRoute("/scan")({
@@ -9,6 +10,115 @@ export const Route = createFileRoute("/scan")({
 
 function ScanPage() {
   const navigate = useNavigate();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [facing, setFacing] = useState<"environment" | "user">("environment");
+  const [torch, setTorch] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function start() {
+      setError(null);
+      setReady(false);
+      try {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Camera not supported on this device.");
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => undefined);
+        }
+        setReady(true);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Unable to access camera.";
+        setError(msg);
+      }
+    }
+    start();
+    return () => {
+      cancelled = true;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
+  }, [facing]);
+
+  async function toggleTorch() {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    const caps = (track.getCapabilities?.() ?? {}) as MediaTrackCapabilities & { torch?: boolean };
+    if (!caps.torch) return;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: !torch } as MediaTrackConstraintSet] });
+      setTorch(!torch);
+    } catch {
+      /* noop */
+    }
+  }
+
+  function capture() {
+    const video = videoRef.current;
+    if (!video || !ready) return;
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if (!w || !h) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    try {
+      sessionStorage.setItem("last-capture", dataUrl);
+      sessionStorage.setItem("last-capture-meta", JSON.stringify({ w, h, ts: Date.now() }));
+    } catch {
+      /* noop */
+    }
+    navigate({ to: "/quality" });
+  }
+
+  function onGallery(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? "");
+      const img = new Image();
+      img.onload = () => {
+        try {
+          sessionStorage.setItem("last-capture", dataUrl);
+          sessionStorage.setItem(
+            "last-capture-meta",
+            JSON.stringify({ w: img.naturalWidth, h: img.naturalHeight, ts: Date.now() }),
+          );
+        } catch {
+          /* noop */
+        }
+        navigate({ to: "/quality" });
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <MobileShell hideNav>
       <div className="relative flex min-h-screen flex-col bg-[oklch(0.15_0.02_270)] text-white">
@@ -21,18 +131,36 @@ function ScanPage() {
             <p className="text-[15px] font-semibold">New Scan</p>
             <p className="text-[11px] text-white/60">Capture a new image</p>
           </div>
-          <button className="rounded-full bg-white/10 p-2.5 backdrop-blur-md">
-            <Zap className="h-5 w-5" />
+          <button onClick={toggleTorch} aria-label="Flash" className="rounded-full bg-white/10 p-2.5 backdrop-blur-md">
+            {torch ? <Zap className="h-5 w-5 text-amber-300" /> : <ZapOff className="h-5 w-5" />}
           </button>
         </header>
 
         {/* Camera preview */}
         <div className="relative mx-5 mt-5 flex-1 overflow-hidden rounded-[28px] bg-gradient-to-br from-[oklch(0.35_0.03_270)] to-[oklch(0.25_0.02_270)]">
-          <FakeRoomScene />
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            autoPlay
+            className={`absolute inset-0 h-full w-full object-cover ${facing === "user" ? "scale-x-[-1]" : ""}`}
+          />
+          {!ready && !error && (
+            <div className="absolute inset-0 flex items-center justify-center text-xs text-white/70">
+              Starting camera…
+            </div>
+          )}
+          {error && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
+              <p className="text-sm font-semibold text-white">Camera unavailable</p>
+              <p className="text-xs text-white/70">{error}</p>
+              <p className="text-[11px] text-white/50">Allow camera access, or use Gallery below.</p>
+            </div>
+          )}
 
           {/* Camera badge */}
           <div className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-[11px] font-semibold backdrop-blur">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-[color:var(--success)]" />
+            <span className={`h-2 w-2 animate-pulse rounded-full ${ready ? "bg-[color:var(--success)]" : "bg-amber-400"}`} />
             Camera
           </div>
 
@@ -55,15 +183,26 @@ function ScanPage() {
         {/* Controls */}
         <div className="px-5 pt-6">
           <div className="flex items-center justify-between">
-            <button className="flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white/10 text-white backdrop-blur-md">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white/10 text-white backdrop-blur-md"
+            >
               <ImageIcon className="h-5 w-5" />
               <span className="text-[9px] font-medium">Gallery</span>
             </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onGallery}
+            />
 
             <button
-              onClick={() => navigate({ to: "/quality" })}
+              onClick={capture}
+              disabled={!ready}
               aria-label="Capture"
-              className="flex h-20 w-20 items-center justify-center rounded-full bg-white/95 shadow-[0_10px_30px_rgba(91,92,235,0.5)] transition-transform active:scale-95"
+              className="flex h-20 w-20 items-center justify-center rounded-full bg-white/95 shadow-[0_10px_30px_rgba(91,92,235,0.5)] transition-transform active:scale-95 disabled:opacity-60"
             >
               <span
                 className="flex h-16 w-16 items-center justify-center rounded-full text-white"
@@ -73,7 +212,10 @@ function ScanPage() {
               </span>
             </button>
 
-            <button className="flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white/10 text-white backdrop-blur-md">
+            <button
+              onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
+              className="flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white/10 text-white backdrop-blur-md"
+            >
               <RefreshCw className="h-5 w-5" />
               <span className="text-[9px] font-medium">Flip</span>
             </button>
@@ -86,45 +228,9 @@ function ScanPage() {
               <p className="font-semibold">Tips for best results</p>
               <p className="text-white/70">Good lighting · Avoid blur · Hold steady</p>
             </div>
-            <button className="ml-auto rounded-full bg-white/10 p-2">
-              <Upload className="h-4 w-4" />
-            </button>
           </div>
         </div>
       </div>
     </MobileShell>
-  );
-}
-
-function FakeRoomScene() {
-  return (
-    <svg viewBox="0 0 400 500" className="absolute inset-0 h-full w-full opacity-90">
-      <defs>
-        <linearGradient id="floor" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#d9cdb8" />
-          <stop offset="100%" stopColor="#b8a487" />
-        </linearGradient>
-        <linearGradient id="wall" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#f2ede4" />
-          <stop offset="100%" stopColor="#e0d9cc" />
-        </linearGradient>
-      </defs>
-      <rect width="400" height="320" fill="url(#wall)" />
-      <rect y="320" width="400" height="180" fill="url(#floor)" />
-      {/* window */}
-      <rect x="20" y="60" width="100" height="180" fill="#cfe6f5" opacity="0.7" />
-      <rect x="20" y="60" width="100" height="180" fill="none" stroke="#8aa3b3" strokeWidth="3" />
-      <line x1="70" y1="60" x2="70" y2="240" stroke="#8aa3b3" strokeWidth="2" />
-      {/* TV */}
-      <rect x="180" y="120" width="140" height="80" rx="4" fill="#1a1a1a" />
-      {/* sofa */}
-      <rect x="60" y="330" width="200" height="70" rx="10" fill="#c9beac" />
-      <rect x="70" y="310" width="180" height="40" rx="8" fill="#d9cdb8" />
-      {/* coffee table */}
-      <rect x="120" y="410" width="140" height="20" rx="4" fill="#8a7358" />
-      {/* plant */}
-      <rect x="310" y="340" width="40" height="50" rx="4" fill="#5a4a38" />
-      <path d="M310 340 Q330 280 320 260 Q340 290 350 340 Q345 300 360 280 Q360 320 350 340 Z" fill="#4a7a4a" />
-    </svg>
   );
 }

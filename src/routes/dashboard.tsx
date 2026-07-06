@@ -1,25 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell, Menu, CheckCircle2, XCircle, Upload, TrendingUp, ImageIcon, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
+import { loadHistory, formatDateTime, type HistoryItem } from "@/lib/history-store";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · Image Sender" }] }),
   component: DashboardPage,
 });
-
-const stats = [
-  { label: "Successful", value: "116", icon: CheckCircle2, tone: "success" as const },
-  { label: "Failed", value: "12", icon: XCircle, tone: "danger" as const },
-  { label: "Today Sent", value: "18", icon: Upload, tone: "primary" as const },
-  { label: "This Week", value: "42", icon: TrendingUp, tone: "accent" as const },
-];
-
-const activity = [
-  { name: "IMG_20250517_102030.jpg", time: "17 May 2025, 10:20 AM", status: "Success" as const },
-  { name: "IMG_20250517_101015.jpg", time: "17 May 2025, 10:10 AM", status: "Success" as const },
-  { name: "IMG_20250517_095500.jpg", time: "17 May 2025, 09:55 AM", status: "Failed" as const },
-  { name: "IMG_20250517_094512.jpg", time: "17 May 2025, 09:45 AM", status: "Success" as const },
-];
 
 function toneClass(tone: "success" | "danger" | "primary" | "accent") {
   switch (tone) {
@@ -35,6 +23,28 @@ function toneClass(tone: "success" | "danger" | "primary" | "accent") {
 }
 
 function DashboardPage() {
+  const [items, setItems] = useState<HistoryItem[]>([]);
+  useEffect(() => {
+    setItems(loadHistory());
+  }, []);
+
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfWeek = startOfDay - now.getDay() * 24 * 60 * 60 * 1000;
+  const total = items.length;
+  const successful = items.filter((i) => i.status === "Success").length;
+  const failed = items.filter((i) => i.status === "Failed").length;
+  const todaySent = items.filter((i) => i.timestamp >= startOfDay).length;
+  const weekSent = items.filter((i) => i.timestamp >= startOfWeek).length;
+
+  const stats = [
+    { label: "Successful", value: successful, icon: CheckCircle2, tone: "success" as const },
+    { label: "Failed", value: failed, icon: XCircle, tone: "danger" as const },
+    { label: "Today Sent", value: todaySent, icon: Upload, tone: "primary" as const },
+    { label: "This Week", value: weekSent, icon: TrendingUp, tone: "accent" as const },
+  ];
+  const activity = items.slice(0, 4);
+
   return (
     <MobileShell>
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-white/75 px-5 py-4 backdrop-blur-xl">
@@ -56,7 +66,7 @@ function DashboardPage() {
           <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
           <p className="text-xs font-medium uppercase tracking-wider text-white/80">Total Images Sent</p>
           <div className="mt-2 flex items-end justify-between">
-            <p className="text-4xl font-bold tracking-tight">128</p>
+            <p className="text-4xl font-bold tracking-tight">{total}</p>
             <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
               <Upload className="h-6 w-6" />
             </div>
@@ -85,20 +95,31 @@ function DashboardPage() {
               View all <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
-          <ul className="divide-y divide-border/60">
-            {activity.map((a) => (
-              <li key={a.name} className="flex items-center gap-3 py-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
-                  <ImageIcon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{a.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{a.time}</p>
-                </div>
-                <StatusBadge status={a.status} />
-              </li>
-            ))}
-          </ul>
+          {activity.length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              No activity yet. Capture your first image to get started.
+            </div>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {activity.map((a) => {
+                const dt = formatDateTime(a.timestamp);
+                return (
+                  <li key={a.id} className="flex items-center gap-3 py-3">
+                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-secondary">
+                      <img src={a.dataUrl} alt={a.name} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{a.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {dt.date}, {dt.time}
+                      </p>
+                    </div>
+                    <StatusBadge status={a.status} />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
       </main>
     </MobileShell>

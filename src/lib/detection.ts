@@ -89,16 +89,20 @@ export async function analyzeImage(
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
+    console.log("YOLO HTTP status:", res.status);
     if (!res.ok) {
       throw new Error(`Detection server returned ${res.status} ${res.statusText}`);
     }
     const json = (await res.json()) as PredictionResponse;
+    console.log("YOLO response:", json);
     if (!json || typeof json !== "object" || !Array.isArray(json.detections)) {
       throw new Error("Unexpected response from detection server");
     }
     if (json.success === false) {
       throw new Error(json.error || "Detection failed on the server");
     }
+    console.log("Detection count:", json.count);
+    console.log("Detections:", json.detections);
     return json;
   } finally {
     clearTimeout(timeout);

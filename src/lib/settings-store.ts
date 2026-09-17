@@ -26,7 +26,16 @@ export function loadSettings(): AppSettings {
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return defaultSettings;
-    return { ...defaultSettings, ...(JSON.parse(raw) as Partial<AppSettings>) };
+    const s = { ...defaultSettings, ...(JSON.parse(raw) as Partial<AppSettings>) };
+    // Migrate legacy upload URLs to the YOLO detection endpoint.
+    if (
+      !s.serverUrl ||
+      s.serverUrl.includes("/api/public/upload") ||
+      s.serverUrl.includes("github.io")
+    ) {
+      s.serverUrl = YOLO_API_URL;
+    }
+    return s;
   } catch {
     return defaultSettings;
   }

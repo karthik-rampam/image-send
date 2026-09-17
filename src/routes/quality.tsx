@@ -192,14 +192,14 @@ function QualityPage() {
             Retake
           </button>
           <button
-            onClick={send}
+            onClick={analyze}
             disabled={!dataUrl || sending}
             className="flex h-14 flex-[1.4] items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-[0.98] disabled:opacity-60"
             style={{ background: "var(--gradient-primary)" }}
           >
             {sending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Sending…
+                <Loader2 className="h-4 w-4 animate-spin" /> Analyzing…
               </>
             ) : (
               <>
@@ -208,6 +208,18 @@ function QualityPage() {
             )}
           </button>
         </div>
+
+        {sending && (
+          <div className="flex items-center gap-3 rounded-2xl border border-primary/25 bg-primary/8 p-4">
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+            <div>
+              <p className="text-sm font-semibold">Analyzing image...</p>
+              <p className="text-xs text-muted-foreground">
+                YOLOv8 AI is checking for potential cameras
+              </p>
+            </div>
+          </div>
+        )}
       </main>
     </MobileShell>
   );

@@ -3,7 +3,14 @@
 // When ngrok gives you a new URL, change ONLY this constant
 // (or override it from Settings → Target Server URL).
 // ============================================================
-export const YOLO_API_URL = "https://9b6e-35-190-143-111.ngrok-free.app/predict";
+export const YOLO_API_URL = "https://018e-35-190-143-111.ngrok-free.app/predict";
+
+/** Normalizes any configured base/endpoint URL to exactly one trailing /predict. */
+export function resolvePredictUrl(raw?: string): string {
+  const base = (raw ?? "").trim() || YOLO_API_URL;
+  const cleaned = base.replace(/\/+$/, "").replace(/(\/predict)+$/i, "");
+  return `${cleaned}/predict`;
+}
 
 export interface BoundingBox {
   x1: number;
@@ -68,7 +75,8 @@ export async function analyzeImage(
   payload: PredictPayload,
   opts: { url?: string; timeoutSec?: number } = {},
 ): Promise<PredictionResponse> {
-  const url = opts.url?.trim() || YOLO_API_URL;
+  const url = resolvePredictUrl(opts.url);
+  console.log("YOLO API URL:", url);
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
@@ -81,16 +89,20 @@ export async function analyzeImage(
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
+    console.log("YOLO HTTP status:", res.status);
     if (!res.ok) {
       throw new Error(`Detection server returned ${res.status} ${res.statusText}`);
     }
     const json = (await res.json()) as PredictionResponse;
+    console.log("YOLO response:", json);
     if (!json || typeof json !== "object" || !Array.isArray(json.detections)) {
       throw new Error("Unexpected response from detection server");
     }
     if (json.success === false) {
       throw new Error(json.error || "Detection failed on the server");
     }
+    console.log("Detection count:", json.count);
+    console.log("Detections:", json.detections);
     return json;
   } finally {
     clearTimeout(timeout);

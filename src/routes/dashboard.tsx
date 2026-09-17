@@ -45,17 +45,24 @@ function DashboardPage() {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const startOfWeek = startOfDay - now.getDay() * 24 * 60 * 60 * 1000;
-  const total = items.length;
-  const successful = items.filter((i) => i.status === "Success").length;
+  const analyzed = items.filter((i) => i.status !== "Failed").length;
+  const detected = items.filter((i) => i.status === "Detected").length;
+  const clear = items.filter((i) => i.status === "Clear" || i.status === "Success").length;
   const failed = items.filter((i) => i.status === "Failed").length;
-  const todaySent = items.filter((i) => i.timestamp >= startOfDay).length;
-  const weekSent = items.filter((i) => i.timestamp >= startOfWeek).length;
+  const todayAnalyzed = items.filter(
+    (i) => i.timestamp >= startOfDay && i.status !== "Failed",
+  ).length;
 
   const stats = [
-    { label: "Successful", value: successful, icon: CheckCircle2, tone: "success" as const },
-    { label: "Failed", value: failed, icon: XCircle, tone: "danger" as const },
-    { label: "Today Sent", value: todaySent, icon: Upload, tone: "primary" as const },
-    { label: "This Week", value: weekSent, icon: TrendingUp, tone: "accent" as const },
+    {
+      label: "Potential Cameras",
+      value: detected,
+      icon: ShieldAlert,
+      tone: "danger" as const,
+    },
+    { label: "No Camera Found", value: clear, icon: ShieldCheck, tone: "success" as const },
+    { label: "Analyzed Today", value: todayAnalyzed, icon: ScanSearch, tone: "primary" as const },
+    { label: "Analysis Failed", value: failed, icon: XCircle, tone: "accent" as const },
   ];
   const activity = items.slice(0, 4);
 

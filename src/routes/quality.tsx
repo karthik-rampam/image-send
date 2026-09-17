@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
-import { addHistoryItem, formatBytes } from "@/lib/history-store";
-import { supabase } from "@/integrations/supabase/client";
+import { addHistoryItem, formatBytes, type SendStatus } from "@/lib/history-store";
 import { loadSettings } from "@/lib/settings-store";
+import { analyzeImage, saveDetectionSession, type DetectionSession } from "@/lib/detection";
 
 export const Route = createFileRoute("/quality")({
   head: () => ({ meta: [{ title: "Image Quality Check · Image Sender" }] }),
@@ -60,64 +60,51 @@ function QualityPage() {
     { label: "File Size", icon: HardDrive, value: formatBytes(bytes), ok: bytes > 0 },
   ];
 
-  async function send() {
+  async function analyze() {
     if (!dataUrl || !meta) return;
     setSending(true);
     const d = new Date(meta.ts);
     const pad = (n: number) => String(n).padStart(2, "0");
     const name = `IMG_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`;
-    let status: "Success" | "Failed" = "Success";
     const settings = loadSettings();
-    const payload = {
+
+    const session: DetectionSession = {
       name,
-      image_data: dataUrl,
+      dataUrl,
       width: meta.w,
       height: meta.h,
-      size_bytes: bytes,
+      sizeBytes: bytes,
       timestamp: meta.ts,
     };
 
-    // 1. POST to user's Target Server URL (from Settings)
-    let postOk = false;
-    if (settings.serverUrl) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        Math.max(1, settings.timeoutSec) * 1000,
-      );
-      try {
-        const res = await fetch(settings.serverUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-        postOk = res.ok;
-        if (!res.ok) console.error("POST failed:", res.status, res.statusText);
-      } catch (err) {
-        console.error("POST to target URL failed:", err);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }
+    let status: SendStatus = "Failed";
+    let detectionCount: number | undefined;
+    let detectedClasses: string[] | undefined;
+    let topConfidence: number | undefined;
 
-    // 2. Also insert into Lovable Cloud so the realtime receiver page still works
-    let cloudOk = false;
     try {
-      const { error } = await supabase.from("captures").insert({
-        name,
-        image_data: dataUrl,
-        width: meta.w,
-        height: meta.h,
-        size_bytes: bytes,
-      });
-      if (error) throw error;
-      cloudOk = true;
+      const result = await analyzeImage(
+        {
+          name,
+          image_data: dataUrl,
+          width: meta.w,
+          height: meta.h,
+          size_bytes: bytes,
+          timestamp: meta.ts,
+        },
+        { url: settings.serverUrl, timeoutSec: settings.timeoutSec },
+      );
+      session.result = result;
+      detectionCount = result.count;
+      detectedClasses = result.detections.map((x) => x.class);
+      topConfidence = result.detections.reduce((m, x) => Math.max(m, x.confidence), 0);
+      status = result.count > 0 ? "Detected" : "Clear";
     } catch (err) {
-      console.error("Cloud insert failed:", err);
+      session.error = err instanceof Error ? err.message : String(err);
+      console.error("YOLO analysis failed:", err);
     }
 
-    if (!postOk && !cloudOk) status = "Failed";
+    saveDetectionSession(session);
     addHistoryItem({
       id: crypto.randomUUID(),
       name,
@@ -127,14 +114,12 @@ function QualityPage() {
       height: meta.h,
       timestamp: meta.ts,
       status,
+      detectionCount,
+      detectedClasses,
+      topConfidence,
     });
-    try {
-      sessionStorage.removeItem("last-capture");
-      sessionStorage.removeItem("last-capture-meta");
-    } catch {
-      /* noop */
-    }
-    navigate({ to: "/history" });
+    setSending(false);
+    navigate({ to: "/detection" });
   }
 
   return (

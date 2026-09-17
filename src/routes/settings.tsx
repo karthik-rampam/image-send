@@ -119,7 +119,7 @@ function SettingsPage() {
         <Section title="Server Settings">
           <EditableRow
             icon={Server}
-            label="Target Server URL"
+            label="Detection API URL"
             value={s.serverUrl}
             mono
             onEdit={() => openEdit("serverUrl")}
@@ -151,7 +151,7 @@ function SettingsPage() {
         <DialogContent className="max-w-[92vw] rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editField === "serverUrl" ? "Target Server URL" : "Timeout (seconds)"}
+              {editField === "serverUrl" ? "Detection API URL" : "Timeout (seconds)"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2">

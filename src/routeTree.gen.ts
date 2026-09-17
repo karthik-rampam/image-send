@@ -14,6 +14,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as QualityRouteImport } from './routes/quality'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as DetectionRouteImport } from './routes/detection'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicUploadRouteImport } from './routes/api/public/upload'
@@ -43,6 +44,11 @@ const HistoryRoute = HistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DetectionRoute = DetectionRouteImport.update({
+  id: '/detection',
+  path: '/detection',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -62,6 +68,7 @@ const ApiPublicUploadRoute = ApiPublicUploadRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/detection': typeof DetectionRoute
   '/history': typeof HistoryRoute
   '/quality': typeof QualityRoute
   '/scan': typeof ScanRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/detection': typeof DetectionRoute
   '/history': typeof HistoryRoute
   '/quality': typeof QualityRoute
   '/scan': typeof ScanRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/detection': typeof DetectionRoute
   '/history': typeof HistoryRoute
   '/quality': typeof QualityRoute
   '/scan': typeof ScanRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/detection'
     | '/history'
     | '/quality'
     | '/scan'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/detection'
     | '/history'
     | '/quality'
     | '/scan'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/detection'
     | '/history'
     | '/quality'
     | '/scan'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
+  DetectionRoute: typeof DetectionRoute
   HistoryRoute: typeof HistoryRoute
   QualityRoute: typeof QualityRoute
   ScanRoute: typeof ScanRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/detection': {
+      id: '/detection'
+      path: '/detection'
+      fullPath: '/detection'
+      preLoaderRoute: typeof DetectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -198,6 +218,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
+  DetectionRoute: DetectionRoute,
   HistoryRoute: HistoryRoute,
   QualityRoute: QualityRoute,
   ScanRoute: ScanRoute,
@@ -208,3 +229,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

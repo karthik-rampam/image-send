@@ -1,4 +1,11 @@
-export type SendStatus = "Success" | "Failed" | "Pending";
+/**
+ * "Detected"  = AI found at least one camera-like object
+ * "Clear"     = AI analysed the image and found nothing
+ * "Failed"    = analysis could not complete (server/network error)
+ * "Success" / "Pending" kept for older stored entries.
+ */
+export type SendStatus = "Detected" | "Clear" | "Failed" | "Pending" | "Success";
+
 export type HistoryItem = {
   id: string;
   name: string;
@@ -8,7 +15,37 @@ export type HistoryItem = {
   height: number;
   timestamp: number;
   status: SendStatus;
+  /** number of detections returned by the AI */
+  detectionCount?: number;
+  /** raw class names, e.g. ["hidden_camera","cctv"] */
+  detectedClasses?: string[];
+  /** highest confidence 0..1 */
+  topConfidence?: number;
 };
+
+export function statusLabel(status: SendStatus): string {
+  switch (status) {
+    case "Detected":
+      return "Potential Camera Detected";
+    case "Clear":
+      return "No Potential Camera Detected";
+    case "Failed":
+      return "Analysis Failed";
+    default:
+      return status;
+  }
+}
+
+export function statusShort(status: SendStatus): string {
+  switch (status) {
+    case "Detected":
+      return "Detected";
+    case "Clear":
+      return "Clear";
+    default:
+      return status;
+  }
+}
 
 const KEY = "image-sender-history";
 

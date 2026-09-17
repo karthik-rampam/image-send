@@ -1,8 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bell, Menu, CheckCircle2, XCircle, Upload, TrendingUp, ChevronRight } from "lucide-react";
+import {
+  Bell,
+  Menu,
+  ShieldAlert,
+  ShieldCheck,
+  XCircle,
+  ScanSearch,
+  ChevronRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
-import { loadHistory, formatDateTime, type HistoryItem } from "@/lib/history-store";
+import {
+  loadHistory,
+  formatDateTime,
+  statusShort,
+  type HistoryItem,
+  type SendStatus,
+} from "@/lib/history-store";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · Image Sender" }] }),
@@ -31,17 +45,24 @@ function DashboardPage() {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const startOfWeek = startOfDay - now.getDay() * 24 * 60 * 60 * 1000;
-  const total = items.length;
-  const successful = items.filter((i) => i.status === "Success").length;
+  const analyzed = items.filter((i) => i.status !== "Failed").length;
+  const detected = items.filter((i) => i.status === "Detected").length;
+  const clear = items.filter((i) => i.status === "Clear" || i.status === "Success").length;
   const failed = items.filter((i) => i.status === "Failed").length;
-  const todaySent = items.filter((i) => i.timestamp >= startOfDay).length;
-  const weekSent = items.filter((i) => i.timestamp >= startOfWeek).length;
+  const todayAnalyzed = items.filter(
+    (i) => i.timestamp >= startOfDay && i.status !== "Failed",
+  ).length;
 
   const stats = [
-    { label: "Successful", value: successful, icon: CheckCircle2, tone: "success" as const },
-    { label: "Failed", value: failed, icon: XCircle, tone: "danger" as const },
-    { label: "Today Sent", value: todaySent, icon: Upload, tone: "primary" as const },
-    { label: "This Week", value: weekSent, icon: TrendingUp, tone: "accent" as const },
+    {
+      label: "Potential Cameras",
+      value: detected,
+      icon: ShieldAlert,
+      tone: "danger" as const,
+    },
+    { label: "No Camera Found", value: clear, icon: ShieldCheck, tone: "success" as const },
+    { label: "Analyzed Today", value: todayAnalyzed, icon: ScanSearch, tone: "primary" as const },
+    { label: "Analysis Failed", value: failed, icon: XCircle, tone: "accent" as const },
   ];
   const activity = items.slice(0, 4);
 
@@ -71,12 +92,12 @@ function DashboardPage() {
         >
           <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
           <p className="text-xs font-medium uppercase tracking-wider text-white/80">
-            Total Images Sent
+            Images Analyzed
           </p>
           <div className="mt-2 flex items-end justify-between">
-            <p className="text-4xl font-bold tracking-tight">{total}</p>
+            <p className="text-4xl font-bold tracking-tight">{analyzed}</p>
             <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
-              <Upload className="h-6 w-6" />
+              <ScanSearch className="h-6 w-6" />
             </div>
           </div>
           <p className="mt-1 text-xs text-white/80">All time</p>
@@ -142,15 +163,17 @@ function DashboardPage() {
   );
 }
 
-function StatusBadge({ status }: { status: "Success" | "Failed" | "Pending" }) {
-  const map = {
+function StatusBadge({ status }: { status: SendStatus }) {
+  const map: Record<SendStatus, string> = {
+    Detected: "bg-[color:var(--danger)]/12 text-[color:var(--danger)]",
+    Clear: "bg-[color:var(--success)]/12 text-[color:var(--success)]",
     Success: "bg-[color:var(--success)]/12 text-[color:var(--success)]",
     Failed: "bg-[color:var(--danger)]/12 text-[color:var(--danger)]",
     Pending: "bg-amber-500/12 text-amber-600",
-  } as const;
+  };
   return (
     <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${map[status]}`}>
-      {status}
+      {statusShort(status)}
     </span>
   );
 }

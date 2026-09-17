@@ -1,3 +1,5 @@
+import { YOLO_API_URL } from "./detection";
+
 export type AppSettings = {
   serverUrl: string;
   timeoutSec: number;
@@ -10,11 +12,9 @@ export type AppSettings = {
 const KEY = "image-sender-settings";
 
 export const defaultSettings: AppSettings = {
-  serverUrl:
-    typeof window !== "undefined"
-      ? `${window.location.origin}/api/public/upload`
-      : "/api/public/upload",
-  timeoutSec: 30,
+  /** YOLOv8 detection endpoint — defaults to the centralized constant. */
+  serverUrl: YOLO_API_URL,
+  timeoutSec: 60,
   defaultCamera: "Back Camera",
   imageQuality: "High",
   autoSend: true,
@@ -26,7 +26,16 @@ export function loadSettings(): AppSettings {
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return defaultSettings;
-    return { ...defaultSettings, ...(JSON.parse(raw) as Partial<AppSettings>) };
+    const s = { ...defaultSettings, ...(JSON.parse(raw) as Partial<AppSettings>) };
+    // Migrate legacy upload URLs to the YOLO detection endpoint.
+    if (
+      !s.serverUrl ||
+      s.serverUrl.includes("/api/public/upload") ||
+      s.serverUrl.includes("github.io")
+    ) {
+      s.serverUrl = YOLO_API_URL;
+    }
+    return s;
   } catch {
     return defaultSettings;
   }

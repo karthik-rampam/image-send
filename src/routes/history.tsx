@@ -14,8 +14,12 @@ import {
   saveHistory,
   formatDateTime,
   formatBytes,
+  statusLabel,
+  statusShort,
   type HistoryItem,
+  type SendStatus,
 } from "@/lib/history-store";
+import { classLabel, confidencePct } from "@/lib/detection";
 
 export const Route = createFileRoute("/history")({
   head: () => ({ meta: [{ title: "Image History · Image Sender" }] }),
@@ -106,6 +110,18 @@ function HistoryPage() {
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
                       {dt.date}, {dt.time} · {formatBytes(i.sizeBytes)}
                     </p>
+                    {typeof i.detectionCount === "number" && (
+                      <p className="mt-0.5 truncate text-[11px] font-medium text-foreground/70">
+                        {i.detectionCount}{" "}
+                        {i.detectionCount === 1 ? "detection" : "detections"}
+                        {i.topConfidence != null && i.detectionCount > 0
+                          ? ` · ${confidencePct(i.topConfidence)}`
+                          : ""}
+                        {i.detectedClasses?.length
+                          ? ` · ${[...new Set(i.detectedClasses)].map(classLabel).join(", ")}`
+                          : ""}
+                      </p>
+                    )}
                   </button>
                   <button
                     onClick={() => removeItem(i.id)}
@@ -140,6 +156,17 @@ function HistoryPage() {
                     {formatDateTime(viewer.timestamp).time} · {viewer.width}×{viewer.height} ·{" "}
                     {formatBytes(viewer.sizeBytes)}
                   </p>
+                  <p className="mt-1 text-[11px] font-semibold text-foreground/80">
+                    {statusLabel(viewer.status)}
+                  </p>
+                  {typeof viewer.detectionCount === "number" && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Detections: {viewer.detectionCount}
+                      {viewer.topConfidence != null && viewer.detectionCount > 0
+                        ? ` · Highest confidence: ${confidencePct(viewer.topConfidence)}`
+                        : ""}
+                    </p>
+                  )}
                 </div>
                 <StatusBadge status={viewer.status} />
               </div>
@@ -151,15 +178,17 @@ function HistoryPage() {
   );
 }
 
-function StatusBadge({ status }: { status: "Success" | "Failed" | "Pending" }) {
-  const map = {
+function StatusBadge({ status }: { status: SendStatus }) {
+  const map: Record<SendStatus, string> = {
+    Detected: "bg-[color:var(--danger)]/12 text-[color:var(--danger)]",
+    Clear: "bg-[color:var(--success)]/12 text-[color:var(--success)]",
     Success: "bg-[color:var(--success)]/12 text-[color:var(--success)]",
     Failed: "bg-[color:var(--danger)]/12 text-[color:var(--danger)]",
     Pending: "bg-amber-500/12 text-amber-600",
-  } as const;
+  };
   return (
     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${map[status]}`}>
-      {status}
+      {statusShort(status)}
     </span>
   );
 }

@@ -14,8 +14,12 @@ import {
   saveHistory,
   formatDateTime,
   formatBytes,
+  statusLabel,
+  statusShort,
   type HistoryItem,
+  type SendStatus,
 } from "@/lib/history-store";
+import { classLabel, confidencePct } from "@/lib/detection";
 
 export const Route = createFileRoute("/history")({
   head: () => ({ meta: [{ title: "Image History · Image Sender" }] }),
@@ -151,15 +155,17 @@ function HistoryPage() {
   );
 }
 
-function StatusBadge({ status }: { status: "Success" | "Failed" | "Pending" }) {
-  const map = {
+function StatusBadge({ status }: { status: SendStatus }) {
+  const map: Record<SendStatus, string> = {
+    Detected: "bg-[color:var(--danger)]/12 text-[color:var(--danger)]",
+    Clear: "bg-[color:var(--success)]/12 text-[color:var(--success)]",
     Success: "bg-[color:var(--success)]/12 text-[color:var(--success)]",
     Failed: "bg-[color:var(--danger)]/12 text-[color:var(--danger)]",
     Pending: "bg-amber-500/12 text-amber-600",
-  } as const;
+  };
   return (
     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${map[status]}`}>
-      {status}
+      {statusShort(status)}
     </span>
   );
 }

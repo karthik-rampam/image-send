@@ -114,7 +114,7 @@ function DetectionPage() {
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
             <button
-              onClick={() => navigate({ to: "/quality", search: { retry: 1 } })}
+              onClick={() => navigate({ to: "/quality" })}
               className="flex h-14 flex-[1.4] items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white shadow-[var(--shadow-soft)] active:scale-[0.98]"
               style={{ background: "var(--gradient-primary)" }}
             >

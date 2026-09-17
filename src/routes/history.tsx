@@ -110,6 +110,18 @@ function HistoryPage() {
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
                       {dt.date}, {dt.time} · {formatBytes(i.sizeBytes)}
                     </p>
+                    {typeof i.detectionCount === "number" && (
+                      <p className="mt-0.5 truncate text-[11px] font-medium text-foreground/70">
+                        {i.detectionCount}{" "}
+                        {i.detectionCount === 1 ? "detection" : "detections"}
+                        {i.topConfidence != null && i.detectionCount > 0
+                          ? ` · ${confidencePct(i.topConfidence)}`
+                          : ""}
+                        {i.detectedClasses?.length
+                          ? ` · ${[...new Set(i.detectedClasses)].map(classLabel).join(", ")}`
+                          : ""}
+                      </p>
+                    )}
                   </button>
                   <button
                     onClick={() => removeItem(i.id)}
@@ -144,6 +156,17 @@ function HistoryPage() {
                     {formatDateTime(viewer.timestamp).time} · {viewer.width}×{viewer.height} ·{" "}
                     {formatBytes(viewer.sizeBytes)}
                   </p>
+                  <p className="mt-1 text-[11px] font-semibold text-foreground/80">
+                    {statusLabel(viewer.status)}
+                  </p>
+                  {typeof viewer.detectionCount === "number" && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Detections: {viewer.detectionCount}
+                      {viewer.topConfidence != null && viewer.detectionCount > 0
+                        ? ` · Highest confidence: ${confidencePct(viewer.topConfidence)}`
+                        : ""}
+                    </p>
+                  )}
                 </div>
                 <StatusBadge status={viewer.status} />
               </div>

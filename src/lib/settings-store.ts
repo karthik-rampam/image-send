@@ -31,7 +31,9 @@ export function loadSettings(): AppSettings {
     if (
       !s.serverUrl ||
       s.serverUrl.includes("/api/public/upload") ||
-      s.serverUrl.includes("github.io")
+      s.serverUrl.includes("github.io") ||
+      // any older ngrok tunnel that is no longer live
+      (s.serverUrl.includes("ngrok-free.app") && !s.serverUrl.includes("018e-35-190-143-111"))
     ) {
       s.serverUrl = YOLO_API_URL;
     }

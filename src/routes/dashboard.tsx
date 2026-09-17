@@ -1,8 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bell, Menu, CheckCircle2, XCircle, Upload, TrendingUp, ChevronRight } from "lucide-react";
+import {
+  Bell,
+  Menu,
+  ShieldAlert,
+  ShieldCheck,
+  XCircle,
+  ScanSearch,
+  ChevronRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
-import { loadHistory, formatDateTime, type HistoryItem } from "@/lib/history-store";
+import {
+  loadHistory,
+  formatDateTime,
+  statusShort,
+  type HistoryItem,
+  type SendStatus,
+} from "@/lib/history-store";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · Image Sender" }] }),

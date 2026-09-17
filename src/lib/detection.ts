@@ -75,7 +75,8 @@ export async function analyzeImage(
   payload: PredictPayload,
   opts: { url?: string; timeoutSec?: number } = {},
 ): Promise<PredictionResponse> {
-  const url = opts.url?.trim() || YOLO_API_URL;
+  const url = resolvePredictUrl(opts.url);
+  console.log("YOLO API URL:", url);
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
